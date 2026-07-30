@@ -1,121 +1,176 @@
-import React, { useEffect, useState } from "react";
-import { getReceivedRequests } from "../api/requestApi";
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-const ReceivedRequests = ({ currentUserId }) => {
+import Home from "./pages/Home";
+import About from "./pages/About";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import Browse from "./pages/Browse";
+import Requests from "./pages/Requests";
+import CreateProfile from "./pages/CreateProfile";
+import Chat from "./pages/Chat";
+import NotFound from "./pages/NotFound";
+import AddSkill from "./pages/AddSkill";
+import Profile from "./pages/Profile";
+import ComplaintRegister from "./pages/ComplaintRegister";
+import OnboardingNext from "./pages/OnboardingNext";
 
-  const [requests, setRequests] = useState([]);
+import AdminLogin from "./pages/adminpanel/AdminLogin";
+import AdminDashboard from "./pages/adminpanel/AdminDashboard";
 
-  // 🔥 Fetch Requests
-  const fetchRequests = async () => {
-    const data = await getReceivedRequests(currentUserId);
-    setRequests(data);
-  };
+import VideoCall from "./components/VideoCall";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import Footer from "./components/Footer";
+import useAuth from "./hooks/useAuth";
 
-  useEffect(() => {
-    fetchRequests();
-  }, [currentUserId]);
-
-  // 🔥 Accept / Reject function
-  const updateStatus = async (id, status) => {
-    try {
-
-      await fetch(`http://localhost:8000/api/requests/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      alert(`Request ${status} ✅`);
-
-      // 🔁 Refresh list
-      fetchRequests();
-
-    } catch (err) {
-      console.log(err);
-      alert("Error updating request ❌");
-    }
-  };
+const AppRoutes = () => {
+  const { currentUser, adminUser } = useAuth();
+  const currentUserId = currentUser?._id;
 
   return (
+    <>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route
+          path="/login"
+          element={currentUser ? <Navigate to="/activity" replace /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={currentUser ? <Navigate to="/activity" replace /> : <Register />}
+        />
+        <Route
+          path="/admin-login"
+          element={adminUser ? <Navigate to="/admin-dashboard" replace /> : <AdminLogin />}
+        />
 
-    <div className="container">
+        <Route
+          path="/browse"
+          element={
+            <ProtectedRoute>
+              <Browse currentUserId={currentUserId} />
+            </ProtectedRoute>
+          }
+        />
 
+        <Route
+          path="/activity"
+          element={
+            <ProtectedRoute>
+              <Dashboard currentUserId={currentUserId} />
+            </ProtectedRoute>
+          }
+        />
 
-      {requests.length === 0 ? (
+        <Route
+          path="/requests"
+          element={
+            <ProtectedRoute>
+              <Requests currentUserId={currentUserId} />
+            </ProtectedRoute>
+          }
+        />
 
-        <p className="text-center">No requests found</p>
+        <Route
+          path="/create-profile"
+          element={
+            <ProtectedRoute>
+              <CreateProfile currentUserId={currentUserId} />
+            </ProtectedRoute>
+          }
+        />
 
-      ) : (
+        <Route
+          path="/onboarding-next"
+          element={
+            <ProtectedRoute>
+              <OnboardingNext />
+            </ProtectedRoute>
+          }
+        />
 
-        <div className="row">
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
 
-          {requests.map((r) => (
+        <Route
+          path="/add-skill"
+          element={
+            <ProtectedRoute>
+              <AddSkill />
+            </ProtectedRoute>
+          }
+        />
 
-            <div className="col-md-6 mb-4" key={r._id}>
+        <Route
+          path="/chat/:id"
+          element={
+            <ProtectedRoute>
+              <Chat currentUserId={currentUserId} />
+            </ProtectedRoute>
+          }
+        />
 
-              <div className="card shadow p-3">
+        <Route
+          path="/video/:id"
+          element={
+            <ProtectedRoute>
+              <VideoCall />
+            </ProtectedRoute>
+          }
+        />
 
-                <h5>{r.sender?.name}</h5>
+        <Route
+          path="/support"
+          element={
+            <ProtectedRoute>
+              <ComplaintRegister />
+            </ProtectedRoute>
+          }
+        />
 
-                <p className="mb-1">
-                  Wants to learn: <strong>{r.skill?.name}</strong>
-                </p>
+        <Route
+          path="/complaints"
+          element={
+            <ProtectedRoute>
+              <ComplaintRegister />
+            </ProtectedRoute>
+          }
+        />
 
-                <p className="text-muted">
-                  Message: {r.message || "No message"}
-                </p>
+        <Route path="/dashboard" element={<Navigate to="/activity" replace />} />
 
-                <p>
-                  Status:{" "}
-                  <span
-                    className={
-                      r.status === "accepted"
-                        ? "text-success"
-                        : r.status === "rejected"
-                        ? "text-danger"
-                        : "text-warning"
-                    }
-                  >
-                    {r.status}
-                  </span>
-                </p>
+        <Route
+          path="/admin-dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
 
-                {/* 🔥 Buttons only if pending */}
-                {r.status === "pending" && (
-                  <div>
-
-                    <button
-                      className="btn btn-success me-2"
-                      onClick={() => updateStatus(r._id, "accepted")}
-                    >
-                      Accept
-                    </button>
-
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => updateStatus(r._id, "rejected")}
-                    >
-                      Reject
-                    </button>
-
-                  </div>
-                )}
-
-              </div>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      )}
-
-    </div>
-
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Footer />
+    </>
   );
 };
 
-export default ReceivedRequests;
+const App = () => {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  );
+};
+
+export default App;
+
